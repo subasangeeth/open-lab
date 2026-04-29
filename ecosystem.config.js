@@ -4,7 +4,7 @@ module.exports = {
       name: "cloud-app",
       script: "app.js",
       instances: 1,
-      autorestart: true,
+      autorestart: false,
       watch: false,
       max_memory_restart: "200M"
     }
