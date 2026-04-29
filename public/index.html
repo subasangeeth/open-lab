@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cloud Native ALB Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #0f172a, #1e3a8a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.container {
+    width: 420px;
+    padding: 30px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+    text-align: center;
+    animation: fadeIn 1s ease;
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    font-size: 13px;
+    color: #cbd5f5;
+    margin-bottom: 20px;
+}
+
+.status {
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.green { background: #22c55e; }
+.red { background: #ef4444; }
+.yellow { background: #facc15; }
+
+.card {
+    background: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+
+.data {
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.value {
+    font-size: 18px;
+    color: #38bdf8;
+}
+
+.counter {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+button {
+    margin-top: 15px;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #22c55e, #4ade80);
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>☁️ ALB Dashboard</h1>
+    <div class="subtitle">Cloud Native System</div>
+
+    <div class="status" id="status">
+        <span class="dot yellow"></span> Waiting...
+    </div>
+
+    <div class="card">
+        <div class="data">IP: <div class="value" id="ip">--</div></div>
+        <div class="data">Hostname: <div class="value" id="host">--</div></div>
+        <div class="data">Instance ID: <div class="value" id="iid">--</div></div>
+        <div class="data">AZ: <div class="value" id="az">--</div></div>
+    </div>
+
+    <div class="counter" id="counter">Requests: 0</div>
+
+    <button onclick="fetchData()">🔄 Refresh</button>
+</div>
+
+<script>
+let count = 0;
+
+async function fetchData() {
+    const status = document.getElementById("status");
+    status.innerHTML = '<span class="dot yellow"></span> Fetching...';
+
+    try {
+        const res = await fetch("/ip");
+        const data = await res.json();
+
+        document.getElementById("ip").innerText = data.ip;
+        document.getElementById("host").innerText = data.hostname;
+        document.getElementById("iid").innerText = data.instanceId;
+        document.getElementById("az").innerText = data.availabilityZone;
+
+        count++;
+        document.getElementById("counter").innerText = "Requests: " + count;
+
+        status.innerHTML = '<span class="dot green"></span> Connected';
+
+        // animation
+        const card = document.querySelector(".card");
+        card.style.transform = "scale(1.05)";
+        setTimeout(() => card.style.transform = "scale(1)", 200);
+
+    } catch (err) {
+        status.innerHTML = '<span class="dot red"></span> Failed';
+    }
+}
+
+// Auto refresh every 3 sec
+setInterval(fetchData, 3000);
+</script>
+
+</body>
+</html>
