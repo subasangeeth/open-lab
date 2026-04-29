@@ -9,8 +9,6 @@ const PORT = 3000;
 // Serve frontend
 app.use(express.static(path.join(__dirname, "public")));
 
-// Metadata function
-const http = require("http");
 
 // Get IMDSv2 token
 function getToken() {
