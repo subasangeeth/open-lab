@@ -1,35 +1,65 @@
-let count = 0;
+const express = require("express");
+const os = require("os");
+const http = require("http");
+const path = require("path");
 
-async function fetchData() {
-    const status = document.getElementById("status");
-    status.innerHTML = '<span class="dot yellow"></span> Fetching...';
+const app = express();
+const PORT = 3000;
 
-    try {
-        const res = await fetch("/ip");
-        const data = await res.json();
+// Serve frontend
+app.use(express.static(path.join(__dirname, "public")));
 
-        document.getElementById("ip").innerText = data.ip;
-        document.getElementById("host").innerText = data.hostname;
-        document.getElementById("iid").innerText = data.instanceId;
-        document.getElementById("az").innerText = data.availabilityZone;
-
-        count++;
-        document.getElementById("counter").innerText = "Requests: " + count;
-
-        status.innerHTML = '<span class="dot green"></span> Connected';
-
-        // Animation
-        const card = document.querySelector(".card");
-        card.style.transform = "scale(1.05)";
-        setTimeout(() => card.style.transform = "scale(1)", 200);
-
-    } catch (err) {
-        status.innerHTML = '<span class="dot red"></span> Failed';
-    }
+// Get metadata
+function getMetadata(path) {
+    return new Promise((resolve, reject) => {
+        http.get({
+            host: "169.254.169.254",
+            path: "/latest/meta-data/" + path,
+            timeout: 2000
+        }, (res) => {
+            let data = "";
+            res.on("data", chunk => data += chunk);
+            res.on("end", () => resolve(data));
+        }).on("error", reject);
+    });
 }
 
-// Auto refresh every 3 seconds
-setInterval(fetchData, 3000);
+// Get IP
+function getIP() {
+    const interfaces = os.networkInterfaces();
+    for (let name in interfaces) {
+        for (let iface of interfaces[name]) {
+            if (iface.family === "IPv4" && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return "IP not found";
+}
 
-// Initial load
-fetchData();
+// API
+app.get("/ip", async (req, res) => {
+    try {
+        const instanceId = await getMetadata("instance-id");
+        const az = await getMetadata("placement/availability-zone");
+
+        res.json({
+            ip: getIP(),
+            hostname: os.hostname(),
+            instanceId,
+            availabilityZone: az
+        });
+    } catch {
+        res.json({
+            ip: getIP(),
+            hostname: os.hostname(),
+            instanceId: "N/A",
+            availabilityZone: "N/A"
+        });
+    }
+});
+
+// Health check
+app.get("/health", (req, res) => res.send("OK"));
+
+app.listen(PORT, () => console.log("Server running on port 3000"));
