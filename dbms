@@ -1,0 +1,356 @@
+
+
+✅ 1) Base Tables + View (Expanded)
+
+CREATE TABLE Department (
+    dept_id INT PRIMARY KEY,
+    dept_name VARCHAR(50)
+);
+
+CREATE TABLE Student (
+    id INT PRIMARY KEY,
+    name VARCHAR(50),
+    dept_id INT,
+    marks INT,
+    FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
+);
+
+INSERT INTO Department VALUES
+(1,'CSE'), (2,'ECE'), (3,'IT');
+
+INSERT INTO Student VALUES
+(1,'Amit',1,85),
+(2,'Rahul',2,78),
+(3,'Sneha',3,92),
+(4,'Kiran',1,88);
+
+CREATE VIEW Student_Details AS
+SELECT s.id, s.name, d.dept_name, s.marks
+FROM Student s
+JOIN Department d ON s.dept_id = d.dept_id;
+
+SELECT * FROM Student_Details;
+
+
+---
+
+✅ 2) DML Operations (Full)
+
+-- INSERT multiple
+INSERT INTO Student VALUES
+(5,'Arun',2,70),
+(6,'Divya',3,95);
+
+-- UPDATE multiple conditions
+UPDATE Student
+SET marks = marks + 5
+WHERE dept_id = 1;
+
+-- DELETE with condition
+DELETE FROM Student
+WHERE marks < 75;
+
+-- SELECT with condition
+SELECT * FROM Student
+WHERE marks > 80
+ORDER BY marks DESC;
+
+
+---
+
+✅ 3) DCL + Roles
+
+CREATE LOGIN user2 WITH PASSWORD = 'pass123';
+
+CREATE USER user2 FOR LOGIN user2;
+
+CREATE ROLE student_role;
+
+GRANT SELECT, INSERT ON Student TO student_role;
+
+EXEC sp_addrolemember 'student_role', 'user2';
+
+REVOKE INSERT ON Student FROM student_role;
+
+
+---
+
+✅ 4) Cursor + Procedure + Function (Advanced)
+
+Cursor
+
+DECLARE @id INT, @marks INT;
+
+DECLARE student_cursor CURSOR FOR
+SELECT id, marks FROM Student;
+
+OPEN student_cursor;
+
+FETCH NEXT FROM student_cursor INTO @id, @marks;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT 'ID: ' + CAST(@id AS VARCHAR) +
+          ' Marks: ' + CAST(@marks AS VARCHAR);
+
+    FETCH NEXT FROM student_cursor INTO @id, @marks;
+END;
+
+CLOSE student_cursor;
+DEALLOCATE student_cursor;
+
+
+---
+
+Procedure with Parameter
+
+CREATE PROCEDURE GetTopStudents
+@minMarks INT
+AS
+BEGIN
+    SELECT * FROM Student
+    WHERE marks >= @minMarks;
+END;
+
+EXEC GetTopStudents 85;
+
+
+---
+
+Function with Condition
+
+CREATE FUNCTION GetAvgMarks(@dept INT)
+RETURNS FLOAT
+AS
+BEGIN
+    DECLARE @avg FLOAT;
+
+    SELECT @avg = AVG(marks)
+    FROM Student
+    WHERE dept_id = @dept;
+
+    RETURN @avg;
+END;
+
+SELECT dbo.GetAvgMarks(1);
+
+
+---
+
+✅ 5) C# DB Connectivity (Insert + Read)
+
+using System;
+using System.Data.SqlClient;
+
+class Program {
+    static void Main() {
+        SqlConnection con = new SqlConnection(
+        "Data Source=.;Initial Catalog=TestDB;Integrated Security=True");
+
+        con.Open();
+
+        // Insert
+        SqlCommand insertCmd = new SqlCommand(
+        "INSERT INTO Student VALUES (7,'Vikram',1,89)", con);
+        insertCmd.ExecuteNonQuery();
+
+        // Read
+        SqlCommand cmd = new SqlCommand("SELECT * FROM Student", con);
+        SqlDataReader dr = cmd.ExecuteReader();
+
+        while (dr.Read()) {
+            Console.WriteLine(
+                dr["id"] + " " + dr["name"] + " " + dr["marks"]);
+        }
+
+        con.Close();
+    }
+}
+
+
+---
+
+✅ 6) Trigger (Audit Table)
+
+CREATE TABLE Student_Log (
+    log_id INT IDENTITY(1,1),
+    message VARCHAR(100),
+    log_date DATETIME
+);
+
+CREATE TRIGGER trg_student_insert
+ON Student
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO Student_Log(message, log_date)
+    SELECT 'Inserted Student ID: ' + CAST(id AS VARCHAR),
+           GETDATE()
+    FROM inserted;
+END;
+
+
+---
+
+✅ 7) MySQL DB + Multiple Tables
+
+CREATE DATABASE LibraryDB;
+USE LibraryDB;
+
+CREATE TABLE Publisher (
+    pub_id INT PRIMARY KEY,
+    pub_name VARCHAR(50)
+);
+
+CREATE TABLE Books (
+    book_id INT PRIMARY KEY,
+    title VARCHAR(100),
+    pub_id INT,
+    FOREIGN KEY (pub_id) REFERENCES Publisher(pub_id)
+);
+
+INSERT INTO Publisher VALUES (1,'McGraw'), (2,'Wiley');
+
+INSERT INTO Books VALUES
+(1,'DBMS',1),
+(2,'OS',2);
+
+
+---
+
+✅ 8) MySQL Replication (Detailed)
+
+-- On Master
+CREATE USER 'repl'@'%' IDENTIFIED BY '123';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+FLUSH PRIVILEGES;
+
+SHOW MASTER STATUS;
+
+-- On Slave
+CHANGE MASTER TO
+MASTER_HOST='192.168.1.10',
+MASTER_USER='repl',
+MASTER_PASSWORD='123',
+MASTER_LOG_FILE='mysql-bin.000001',
+MASTER_LOG_POS=120;
+
+START SLAVE;
+SHOW SLAVE STATUS\G;
+
+
+---
+
+✅ 9) MongoDB Full Example
+
+use school;
+
+db.students.insertMany([
+  {name:"Amit", dept:"CSE", marks:85},
+  {name:"Rahul", dept:"ECE", marks:78},
+  {name:"Sneha", dept:"IT", marks:92}
+]);
+
+db.students.find({marks: {$gt: 80}});
+
+db.students.updateMany(
+  {dept:"CSE"},
+  {$inc:{marks:5}}
+);
+
+db.students.deleteMany({marks: {$lt: 75}});
+
+db.students.createIndex({dept:1});
+
+
+---
+
+✅ 10) XML Table + Query
+
+CREATE TABLE XMLStore (
+    id INT,
+    xml_data XML
+);
+
+INSERT INTO XMLStore VALUES (1,
+'<students>
+    <student>
+        <name>Amit</name>
+        <marks>85</marks>
+    </student>
+    <student>
+        <name>Rahul</name>
+        <marks>78</marks>
+    </student>
+</students>');
+
+SELECT
+xml_data.value('(/students/student/name)[1]', 'VARCHAR(50)') AS Name;
+
+
+---
+
+✅ 11) Report Query (Advanced)
+
+SELECT d.dept_name,
+COUNT(s.id) AS total_students,
+MAX(s.marks) AS highest,
+MIN(s.marks) AS lowest,
+AVG(s.marks) AS average
+FROM Student s
+JOIN Department d ON s.dept_id = d.dept_id
+GROUP BY d.dept_name;
+
+
+---
+
+✅ 12) Library Full Query (Big One)
+
+CREATE TABLE library_branch (
+    branch_id INT PRIMARY KEY,
+    branch_name VARCHAR(50)
+);
+
+CREATE TABLE book (
+    book_id INT PRIMARY KEY,
+    title VARCHAR(100),
+    publisher_name VARCHAR(50)
+);
+
+CREATE TABLE book_authors (
+    book_id INT,
+    author_name VARCHAR(50)
+);
+
+CREATE TABLE book_copies (
+    book_id INT,
+    branch_id INT,
+    no_of_copies INT
+);
+
+SELECT 
+    b.book_id,
+    b.title,
+    b.publisher_name,
+    ba.author_name,
+    bc.no_of_copies,
+    lb.branch_name
+FROM book b
+JOIN book_authors ba ON b.book_id = ba.book_id
+JOIN book_copies bc ON b.book_id = bc.book_id
+JOIN library_branch lb ON bc.branch_id = lb.branch_id
+ORDER BY lb.branch_name, b.title;
+
+
+---
+
+🔥 If you want even more:
+
+Full insert data for library system
+
+ER diagram + normalization
+
+Viva Q&A (very important for exams)
+
+
+Just tell 👍
